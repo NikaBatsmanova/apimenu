@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-
+from flask_restful import reqparse
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
@@ -72,62 +72,81 @@ def api_id():
     for menu in ai_menu:
         if (menu["id"] == id):
             results.append(menu)
+    if results == []:
+        return f"Menu with id {id} does not exist", 400
     return jsonify(results)
 
 
 @app.route('/menu', methods=['POST'])
 def api_post():
-    id = int(request.form['id'])
-    day = request.form['day']
-    breakfast = request.form['breakfast']
-    lunch = request.form['lunch']
-    dinner = request.form['dinner']
+    parser = reqparse.RequestParser()
+    parser.add_argument("day")
+    parser.add_argument("breakfast")
+    parser.add_argument("lunch")
+    parser.add_argument("dinner")
+    params = parser.parse_args()
+    if 'id' in request.args:
+        id = int(request.args['id'])
+    else:
+        return "Error: No id field provided. Please specify an id."
     for menu in ai_menu:
         if (id == menu["id"]):
             return f"Menu with id {id} already exists", 400
     menu = {
         "id": int(id),
-        "day of week": day,
-        "breakfast": breakfast,
-        "dinner": lunch,
-        "lunch": dinner
+        "day of week": params["day"],
+        "breakfast": params["breakfast"],
+        "lunch": params["lunch"],
+        "dinner": params["dinner"]
     }
     ai_menu.append(menu)
-    return jsonify(ai_menu)
+    return menu, 201
 
 
 @app.route('/menu', methods=['PUT'])
 def put():
-    id = int(request.form['id'])
-    day = request.form['day']
-    breakfast = request.form['breakfast']
-    lunch = request.form['lunch']
-    dinner = request.form['dinner']
+    parser = reqparse.RequestParser()
+    parser.add_argument("day")
+    parser.add_argument("breakfast")
+    parser.add_argument("lunch")
+    parser.add_argument("dinner")
+    params = parser.parse_args()
+    if 'id' in request.args:
+        id = int(request.args['id'])
+    else:
+        return "Error: No id field provided. Please specify an id."
     for menu in ai_menu:
         if (id == menu["id"]):
-            menu["day of week"] = day
-            menu["breakfast"] = breakfast
-            menu["dinner"] = lunch
-            menu["lunch"] = dinner
-            return jsonify(ai_menu)
+            menu["day of week"] = params["day"]
+            menu["breakfast"] = params["breakfast"]
+            menu["dinner"] = params["dinner"]
+            menu["lunch"] = params["lunch"]
+            return menu, 200
 
     menu = {
         "id": int(id),
-        "day of week": day,
-        "breakfast": breakfast,
-        "dinner": lunch,
-        "lunch": dinner
+        "day of week": params["day"],
+        "breakfast": params["breakfast"],
+        "lunch": params["lunch"],
+        "dinner": params["dinner"]
     }
     ai_menu.append(menu)
-    return jsonify(ai_menu)
+    return menu, 201
 
 
 @app.route('/menu', methods=['DELETE'])
 def delete():
-    id = int(request.form['id'])
+    if 'id' in request.args:
+        id = int(request.args['id'])
+    else:
+        return "Error: No id field provided. Please specify an id."
     global ai_menu
-    ai_menu = [menu for menu in ai_menu if menu["id"] != id]
-    return jsonify(ai_menu)
+    ai_menu1 = [menu for menu in ai_menu if menu["id"] != id]
+    if (ai_menu1 == ai_menu):
+        return f"Menu with id {id} does not exist", 400
+    else:
+        ai_menu = ai_menu1
+        return f"Menu with id {id} is deleted.", 200
 
 
-app.run()
+app.run(host="192.168.1.105")
